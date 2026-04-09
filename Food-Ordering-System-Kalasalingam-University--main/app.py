@@ -22,10 +22,6 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# Create database tables
-with app.app_context():
-    db.create_all()
-
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -660,11 +656,23 @@ def canteen_required(f):
     return decorated_function
 
 # Routes
+@app.route('/init_db')
+def init_db():
+    try:
+        with app.app_context():
+            db.create_all()
+        return "Database initialized successfully!"
+    except Exception as e:
+        return f"Error initializing database: {str(e)}", 500
+
 @app.route('/')
 def index():
-    if current_user.is_authenticated and current_user.is_canteen:
-        return redirect(url_for('canteen_dashboard'))
-    return render_template('index.html', canteens=CANTEENS, canteen_images=CANTEEN_IMAGES)
+    try:
+        if current_user.is_authenticated and current_user.is_canteen:
+            return redirect(url_for('canteen_dashboard'))
+        return render_template('index.html', canteens=CANTEENS, canteen_images=CANTEEN_IMAGES)
+    except Exception as e:
+        return f"Error loading homepage: {str(e)}", 500
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -709,29 +717,33 @@ def login():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-        
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        
-        if User.query.filter_by(email=email).first():
-            flash('Email already registered', 'danger')
-            return redirect(url_for('login'))
+    try:
+        if current_user.is_authenticated:
+            return redirect(url_for('dashboard'))
             
-        user = User(
-            email=email,
-            password=generate_password_hash(password),
-            is_canteen=False
-        )
-        db.session.add(user)
-        db.session.commit()
+        if request.method == 'POST':
+            email = request.form.get('email')
+            password = request.form.get('password')
+            
+            if User.query.filter_by(email=email).first():
+                flash('Email already registered', 'danger')
+                return redirect(url_for('login'))
+                
+            user = User(
+                email=email,
+                password=generate_password_hash(password),
+                is_canteen=False
+            )
+            db.session.add(user)
+            db.session.commit()
+            
+            flash('Registration successful! Please login.', 'success')
+            return redirect(url_for('login'))
         
-        flash('Registration successful! Please login.', 'success')
-        return redirect(url_for('login'))
-    
-    return render_template('register.html')
+        return render_template('register.html')
+    except Exception as e:
+        flash(f'Registration error: {str(e)}', 'danger')
+        return render_template('register.html')
 
 @app.route('/dashboard')
 @login_required
@@ -938,8 +950,12 @@ def get_cart_summary():
 @login_required
 @canteen_required
 def canteen_dashboard():
-    orders = Order.query.filter_by(canteen_name=current_user.canteen_name).order_by(Order.created_at.desc()).all()
-    return render_template('canteen_dashboard.html', orders=orders)
+    try:
+        orders = Order.query.filter_by(canteen_name=current_user.canteen_name).order_by(Order.created_at.desc()).all()
+        return render_template('canteen_dashboard.html', orders=orders)
+    except Exception as e:
+        flash(f'Dashboard error: {str(e)}', 'danger')
+        return render_template('canteen_dashboard.html', orders=[])
 
 @app.route('/order/update_status/<int:order_id>', methods=['POST'])
 @login_required
