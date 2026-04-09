@@ -5,7 +5,7 @@ services:
     name: canteen-ms
     env: python
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "gunicorn -c gunicorn_config.py app:app"
+    startCommand: "cd Food-Ordering-System-Kalasalingam-University--main && python -c 'from app import app, db; with app.app_context(): db.create_all()' && gunicorn -c gunicorn_config.py app:app"
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.0
