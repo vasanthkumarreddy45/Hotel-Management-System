@@ -11,11 +11,5 @@ with app.app_context():
     db.create_all()
     print("Database initialized successfully!")
 
-# Start the application
-if __name__ == "__main__":
-    import subprocess
-    import sys
-    
-    # Start gunicorn
-    cmd = ["gunicorn", "-c", "gunicorn_config.py", "app:app"]
-    subprocess.run(cmd, sys.exit(0))
+# Replace current process with gunicorn
+os.execlp("gunicorn", "gunicorn", "-c", "gunicorn_config.py", "app:app")
