@@ -938,7 +938,7 @@ def get_cart_summary():
 @login_required
 @canteen_required
 def canteen_dashboard():
-    orders = Order.query.filter_by(canteen_name=current_user.email).order_by(Order.created_at.desc()).all()
+    orders = Order.query.filter_by(canteen_name=current_user.canteen_name).order_by(Order.created_at.desc()).all()
     return render_template('canteen_dashboard.html', orders=orders)
 
 @app.route('/order/update_status/<int:order_id>', methods=['POST'])
@@ -946,7 +946,7 @@ def canteen_dashboard():
 @canteen_required
 def update_order_status(order_id):
     order = Order.query.get_or_404(order_id)
-    if order.canteen_name != current_user.email:
+    if order.canteen_name != current_user.canteen_name:
         return jsonify({'success': False, 'error': 'Unauthorized'}), 403
     
     status = request.json.get('status')
